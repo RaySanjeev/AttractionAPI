@@ -132,13 +132,18 @@ exports.availability = catchAsync(async (req, res, next) => {
     });
 });
 
-const createBookingObj = (availability, attraction, userDetails) => {
+const createBookingObj = (
+  availability,
+  attraction,
+  userDetails,
+  questionsArrayAns
+) => {
   let questionArray = [];
 
-  attraction.data.ticketTypesAndPackages[0].questions.forEach((el) => {
+  attraction.data.ticketTypesAndPackages[0].questions.forEach((el, index) => {
     const obj = {
       id: el.id,
-      answer: '1997-10-12',
+      answer: questionsArrayAns[index],
     };
     questionArray.push(obj);
   });
@@ -170,20 +175,36 @@ const createBookingObj = (availability, attraction, userDetails) => {
 };
 
 exports.bookAttraction = catchAsync(async (req, res, next) => {
+  const questionsArrayAns = [
+    req.body.firstName,
+    req.body.lastName,
+    req.body.DOB,
+    req.body.passport,
+    req.body.issuePassport,
+    req.body.expirePassport,
+    req.body.nationality,
+    req.body.gender,
+    req.body.hotel,
+  ];
   const userDetails = {
     firstName: req.body.firstName,
     lastName: req.body.lastName,
+    passport: req.body.passport,
     personTitle: req.body.personTitle,
     email: req.body.email,
     phone: req.body.phone,
-    passport: req.body.passport,
     comments: req.body.comments,
   };
 
   const config = {
     method: 'POST',
     url: `https://test.agidmc.com/v1/createBooking`,
-    data: createBookingObj(availability, attraction, userDetails),
+    data: createBookingObj(
+      availability,
+      attraction,
+      userDetails,
+      questionsArrayAns
+    ),
     headers: {
       'API-Key': process.env.API_Key,
       Cookie: '__cfduid=d46ff57c49cad1f38d9d60e456a84ce0d1614066410',
@@ -198,15 +219,15 @@ exports.bookAttraction = catchAsync(async (req, res, next) => {
           booked: response.data,
         },
       });
-    })
-    .catch(function (error) {
-      console.log(error.response.data);
       fs.writeFile(
         './StaticData/booking.txt',
-        JSON.stringify(error.response.data),
+        JSON.stringify(response.data),
         function () {
           console.log('File saved into booking');
         }
       );
+    })
+    .catch(function (error) {
+      console.log(error.response.data);
     });
 });
